@@ -29,7 +29,7 @@ def handle_request():
         if command == "book":
             response = book_summary()
         elif command == "account":
-            response = dict(accounts[account])
+            response = accounts[account].to_dict()
         elif command == "buy":
             assert account in accounts
             order = Order(symbol=command["symbol"], sign=BUY, price=command["price"], volume=command["volume"], account=account)

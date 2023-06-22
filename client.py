@@ -9,8 +9,7 @@ def post(request):
     return requests.post("http://etrade.pythonanywhere.com/", json=request)
 
 
-_ = post({"command": "register"})
+response = post({"command": "register"})
+print(response, response.json())
 response = post({"command": "account"})
-
-print(response)
-print(response.json())
+print(response, response.json())
