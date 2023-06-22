@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from time import time
 from heapq import heappush, heappop
 from copy import deepcopy
-from library import BUY, SELL, symbols, Account, Order, OrderBook, OrderBooks, match_price, execute
+from lib import BUY, SELL, symbols, Account, Order, OrderBook, OrderBooks, match_price, execute
 
 accounts = {}
 books = OrderBooks()

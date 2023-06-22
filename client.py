@@ -5,12 +5,12 @@ name = "anon"
 
 
 def post(request):
-    requst["account"] = name
+    request["account"] = name
     return requests.post("http://etrade.pythonanywhere.com/", json=request)
 
 
-post({"command": "register"})
-post({"command": "account"})
+_ = post({"command": "register"})
+response = post({"command": "account"})
 
 print(response)
 print(response.json())
