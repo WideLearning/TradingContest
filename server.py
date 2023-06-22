@@ -53,8 +53,8 @@ def handle_request():
 @app.route('/', methods=['GET'])
 def print_help():
     with open("client.py", encoding="utf-8") as f:
-        sample = f.read()
-    return f"Example implementation of a client:\n{sample}"
+        sample = "<br>".join(f.readlines())
+    return f"Example implementation of a client:<br><br>{sample}"
 
 
 if __name__ == '__main__':
