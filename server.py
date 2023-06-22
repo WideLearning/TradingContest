@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify
-from time import time
 from heapq import heappush, heappop
 from copy import deepcopy
 from lib import BUY, SELL, symbols, Account, Order, OrderBook, OrderBooks, match_price, execute
@@ -9,11 +8,11 @@ books = OrderBooks()
 
 
 def account_summary():
-    return {name: dict(account) for name, account in accounts.items()}
+    return {name: account.to_dict() for name, account in accounts.items()}
 
 
 def book_summary():
-    return dict(books)
+    return books.to_dict()
 
 
 app = Flask(__name__)

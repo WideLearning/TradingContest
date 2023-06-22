@@ -1,5 +1,6 @@
 from heapq import heappush, heappop
 from copy import deepcopy
+from time import time as get_current_time
 
 symbols = ["A", "B", "C"]
 BUY = +1
@@ -16,7 +17,7 @@ class Account:
         # TODO do we allow negative balance?
         self.balance[symbol] += quantity
 
-    def __dict__(self):
+    def to_dict(self):
         return self.balance
 
 
@@ -28,10 +29,11 @@ class Order:
         assert type(volume) is float and volume > 0
         assert type(account) is Account
         if time is None:
-            time = time()
+            time = get_current_time()
         else:
             assert type(time) is float and abs((time - time()) / time) < 0.1
 
+        self.symbol = symbol
         self.sign = sign
         self.price = price
         self.volume = volume
@@ -48,6 +50,15 @@ class Order:
         assert volume <= self.volume
         self.account.change_balance(self.symbol, self.sign * volume)
         self.account.change_balance("$", -self.sign * self.price * volume)
+
+    def to_dict(self):
+        return {
+            "symbol": self.symbol,
+            "sign": self.sign,
+            "price": self.price,
+            "volume": self.volume,
+            "time": self.time,
+        }
 
 
 def match_price(x: Order, y: Order) -> float | None:
@@ -87,25 +98,27 @@ class OrderBook:
             while self.sell and order is not None:
                 price = match_price(order, self.sell[0])
                 if price is None:
-                    heappush(self.buy, order)
-                    return
+                    break
                 counter = heappop(self.sell)
                 order, counter = execute(order, counter)
                 if counter is not None:
                     heappush(self.sell, counter)
+            if order is not None:
+                heappush(self.buy, order)
         else:
             while self.buy and order is not None:
                 price = match_price(order, self.buy[0])
                 if price is None:
-                    heappush(self.sell, order)
-                    return
+                    break
                 counter = heappop(self.buy)
                 order, counter = execute(order, counter)
                 if counter is not None:
                     heappush(self.buy, counter)
+            if order is not None:
+                heappush(self.sell, order)
 
-    def __dict__(self):
-        return {"buy": [dict(order) for order in self.buy], "sell": [dict(order) for order in self.sell]}
+    def to_dict(self):
+        return {"buy": [order.to_dict() for order in self.buy], "sell": [order.to_dict() for order in self.sell]}
 
 
 class OrderBooks:
@@ -116,5 +129,5 @@ class OrderBooks:
         assert order.symbol in self.books
         self.books[order.symbol].put_order(order)
 
-    def __dict__(self):
-        return {symbol: dict(book) for symbol, book in self.books.items()}
+    def to_dict(self):
+        return {symbol: book.to_dict() for symbol, book in self.books.items()}
