@@ -1,9 +1,16 @@
 import requests
 
-order = {
-    "command": "order_book"
-}
 
-response = requests.post("http://etrade.pythonanywhere.com/", json=order)
+name = "anon"
+
+
+def post(request):
+    requst["account"] = name
+    return requests.post("http://etrade.pythonanywhere.com/", json=request)
+
+
+post({"command": "register"})
+post({"command": "account"})
+
 print(response)
 print(response.json())
