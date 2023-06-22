@@ -31,12 +31,12 @@ def handle_request():
         elif command == "account":
             response = accounts[account].to_dict()
         elif command == "buy":
-            assert account in accounts
+            assert account in accounts, "account must be registered"
             order = Order(symbol=data["symbol"], sign=BUY, price=data["price"], volume=data["volume"], account=account)
             books.put_order(order)
             response = {"status": "ok"}
         elif command == "sell":
-            assert account in accounts
+            assert account in accounts, "account must be registered"
             order = Order(symbol=data["symbol"], sign=SELL, price=data["price"], volume=data["volume"], account=account)
             books.put_order(order)
             response = {"status": "ok"}

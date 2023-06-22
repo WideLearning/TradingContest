@@ -23,15 +23,15 @@ class Account:
 
 class Order:
     def __init__(self, symbol, sign, price, volume, account, time=None):
-        assert type(symbol) is str
-        assert sign in [BUY, SELL]
-        assert type(price) is float and price > 0
-        assert type(volume) is float and volume > 0
-        assert type(account) is Account
+        assert type(symbol) is str, "symbol must be str"
+        assert sign in [BUY, SELL], "sign must be BUY or SELL"
+        assert type(price) is float and price > 0, "price must be postitive float"
+        assert type(volume) is float and volume > 0, "volume must be positive float"
+        assert type(account) is Account, "account must be Account"
         if time is None:
             time = get_current_time()
         else:
-            assert type(time) is float and abs((time - time()) / time) < 0.1
+            assert type(time) is float and abs((time - get_current_time()) / time) < 0.1, "time must be float and close to current time"
 
         self.symbol = symbol
         self.sign = sign
@@ -47,7 +47,7 @@ class Order:
         return self.sorting_key() < other.sorting_key()
 
     def fill(self, volume):
-        assert volume <= self.volume
+        assert volume <= self.volume, "fill volume must be not greater than order volume"
         self.account.change_balance(self.symbol, self.sign * volume)
         self.account.change_balance("$", -self.sign * self.price * volume)
 
@@ -62,10 +62,10 @@ class Order:
 
 
 def match_price(x: Order, y: Order) -> float | None:
-    assert x.symbol == y.symbol
+    assert x.symbol == y.symbol, "matched orders must be for the same symbol"
     if x.price > y.price:
         x, y = y, x
-    assert x.price <= y.price
+    assert x.price <= y.price, "just in case"
     if x.sign == SELL and y.sign == BUY:
         return x.price if x.time < y.time else y.price
     else:
@@ -126,7 +126,7 @@ class OrderBooks:
         self.books = {symbol: OrderBook() for symbol in symbols}
 
     def put_order(self, order):
-        assert order.symbol in self.books
+        assert order.symbol in self.books, "symbol must be in books"
         self.books[order.symbol].put_order(order)
 
     def to_dict(self):
