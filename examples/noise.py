@@ -5,7 +5,7 @@ from time import time, sleep
 import requests
 
 parser = argparse.ArgumentParser()
-parser.add_argument("name", type=str, required=True, help="unique name for the bot")
+parser.add_argument("name", type=str, help="unique name for the bot")
 name = parser.parse_args().name
 
 
