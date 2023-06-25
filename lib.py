@@ -53,10 +53,8 @@ class Order:
         assert (
             volume <= self.volume
         ), "fill volume must be not greater than order volume"
-        print("fill", self.account.balance, self.id, volume)
         self.account.change_balance(self.symbol, self.sign * volume)
         self.account.change_balance("$", -self.sign * self.price * volume)
-        print("filled", self.account.balance)
         self.volume -= volume
 
     def to_dict(self):

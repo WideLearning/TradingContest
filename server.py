@@ -44,7 +44,7 @@ def handle_request():
 @app.route("/", methods=["GET"])
 def print_help():
     with open("client.py", encoding="utf-8") as f:
-        sample = "<br>".join(f.readlines())
+        sample = f"<pre>{f.read()}</pre>"
     return f"Example implementation of a client:<br><br>{sample}"
 
 
