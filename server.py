@@ -18,7 +18,7 @@ def handle_request():
         if command == "book":
             response = exchange.books_summary()
         elif command == "account":
-            response = exchange.account_summary()
+            response = exchange.account_summary(account)
         elif command == "buy" or command == "sell":
             sign = BUY if command == "buy" else SELL
             response = exchange.put_order(
