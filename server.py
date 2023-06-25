@@ -16,9 +16,9 @@ def handle_request():
         account = data["account"]
         response = {}
         if command == "book":
-            response = exchange.book_summary()
+            response = exchange.books_summary()
         elif command == "account":
-            response = exchange.accounts_summary()
+            response = exchange.account_summary()
         elif command == "buy" or command == "sell":
             sign = BUY if command == "buy" else SELL
             response = exchange.put_order(
@@ -29,7 +29,7 @@ def handle_request():
                 account=account,
             )
         elif command == "cancel":
-            response = exchange.cancel(id=data["id"])
+            response = exchange.cancel_order(id=data["id"])
         elif command == "register":
             response = exchange.register(account=account)
         elif command == "history":
