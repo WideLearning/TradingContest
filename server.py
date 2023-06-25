@@ -1,24 +1,13 @@
-from flask import Flask, request, jsonify
-from heapq import heappush, heappop
-from copy import deepcopy
-from lib import BUY, SELL, symbols, Account, Order, OrderBook, OrderBooks, match_price, execute
+from flask import Flask, jsonify, request
 
-accounts = {}
-books = OrderBooks()
+from lib import BUY, SELL, Exchange
 
-
-def account_summary():
-    return {name: account.to_dict() for name, account in accounts.items()}
-
-
-def book_summary():
-    return books.to_dict()
-
+exchange = Exchange()
 
 app = Flask(__name__)
 
 
-@app.route('/', methods=['POST'])
+@app.route("/", methods=["POST"])
 def handle_request():
     data = request.get_json()
     print(data)
@@ -27,23 +16,24 @@ def handle_request():
         account = data["account"]
         response = {}
         if command == "book":
-            response = book_summary()
+            response = exchange.book_summary()
         elif command == "account":
-            assert account in accounts, "account must be registered"
-            response = accounts[account].to_dict()
-        elif command == "buy":
-            assert account in accounts, "account must be registered"
-            order = Order(symbol=data["symbol"], sign=BUY, price=data["price"], volume=data["volume"], account=accounts[account])
-            books.put_order(order)
-            response = {"status": "ok"}
-        elif command == "sell":
-            assert account in accounts, "account must be registered"
-            order = Order(symbol=data["symbol"], sign=SELL, price=data["price"], volume=data["volume"], account=accounts[account])
-            books.put_order(order)
-            response = {"status": "ok"}
+            response = exchange.accounts_summary()
+        elif command == "buy" or command == "sell":
+            sign = BUY if command == "buy" else SELL
+            response = exchange.put_order(
+                symbol=data["symbol"],
+                sign=sign,
+                price=data["price"],
+                volume=data["volume"],
+                account=account,
+            )
+        elif command == "cancel":
+            response = exchange.cancel(id=data["id"])
         elif command == "register":
-            accounts[account] = Account()
-            response = {"status": "ok"}
+            response = exchange.register(account=account)
+        elif command == "history":
+            response = exchange.trade_history
         else:
             raise Exception(f"Unknown command {command}")
         return jsonify(response), 200
@@ -51,12 +41,12 @@ def handle_request():
         return jsonify({"error": str(e)}), 200
 
 
-@app.route('/', methods=['GET'])
+@app.route("/", methods=["GET"])
 def print_help():
     with open("client.py", encoding="utf-8") as f:
         sample = "<br>".join(f.readlines())
     return f"Example implementation of a client:<br><br>{sample}"
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)

@@ -1,14 +1,14 @@
 from heapq import heappush, heappop
 from copy import deepcopy
 from time import time as get_current_time
+from uuid import uuid4
 
-symbols = ["A", "B", "C"]
 BUY = +1
 SELL = -1
 
 
 class Account:
-    def __init__(self):
+    def __init__(self, symbols):
         # TODO add some tracking maybe
         self.balance = {symbol: 100 for symbol in symbols}
         self.balance["$"] = 1000
@@ -31,7 +31,9 @@ class Order:
         if time is None:
             time = get_current_time()
         else:
-            assert type(time) is float and abs((time - get_current_time()) / time) < 0.1, "time must be float and close to current time"
+            assert (
+                type(time) is float and abs((time - get_current_time()) / time) < 0.1
+            ), "time must be float and close to current time"
 
         self.symbol = symbol
         self.sign = sign
@@ -39,6 +41,7 @@ class Order:
         self.volume = volume
         self.account = account
         self.time = time
+        self.id = uuid4()
 
     def sorting_key(self):
         return (-self.sign * self.price, self.time)
@@ -47,9 +50,14 @@ class Order:
         return self.sorting_key() < other.sorting_key()
 
     def fill(self, volume):
-        assert volume <= self.volume, "fill volume must be not greater than order volume"
+        assert (
+            volume <= self.volume
+        ), "fill volume must be not greater than order volume"
+        print("fill", self.account.balance, self.id, volume)
         self.account.change_balance(self.symbol, self.sign * volume)
         self.account.change_balance("$", -self.sign * self.price * volume)
+        print("filled", self.account.balance)
+        self.volume -= volume
 
     def to_dict(self):
         return {
@@ -72,62 +80,100 @@ def match_price(x: Order, y: Order) -> float | None:
         return None
 
 
-def execute(x: Order, y: Order) -> tuple[Order, Order]:
-    x = deepcopy(x)
-    y = deepcopy(y)
+def execute(x: Order, y: Order, trade_history: dict[str, list[tuple[float, float, float]]]) -> tuple[Order, Order]:
     price = match_price(x, y)
     if price is None:
-        return (x, y)
+        return
     volume = min(x.volume, y.volume)
+    trade_history[x.symbol].append((get_current_time(), price, volume))
     x.fill(volume)
     y.fill(volume)
-    x = x if x.volume else None
-    y = y if y.volume else None
-    return (x, y)
+
 
 # TODO (100, 200) order should be able to match with (99, 100) and (101, 100) together
-
-
 class OrderBook:
     def __init__(self):
         self.buy = []
         self.sell = []
+        self.active_ids = set()
 
-    def put_order(self, order):
-        if order.sign == BUY:
-            while self.sell and order is not None:
-                price = match_price(order, self.sell[0])
-                if price is None:
-                    break
-                counter = heappop(self.sell)
-                order, counter = execute(order, counter)
-                if counter is not None:
-                    heappush(self.sell, counter)
-            if order is not None:
-                heappush(self.buy, order)
+    def pop_active(self, heap):
+        while heap:
+            top = heappop(heap)
+            if top.id not in self.active_ids:
+                continue
+            else:
+                self.active_ids.remove(top.id)
+                return top
+        return None
+    
+    def push(self, heap, order):
+        heappush(heap, order)
+        self.active_ids.add(order.id)
+
+    def put_order(self, order, trade_history):
+        same, opposite = (self.buy, self.sell) if order.sign == BUY else (self.sell, self.buy)
+        while order.volume:
+            counter = self.pop_active(opposite)
+            if counter is None:
+                break
+            price = match_price(order, counter)
+            if price is None:
+                self.push(opposite, counter)
+                break
+            execute(order, counter, trade_history)
+            if counter.volume:
+                self.push(opposite, counter)
+        if order.volume:
+            self.push(same, order)
+            return order.id
         else:
-            while self.buy and order is not None:
-                price = match_price(order, self.buy[0])
-                if price is None:
-                    break
-                counter = heappop(self.buy)
-                order, counter = execute(order, counter)
-                if counter is not None:
-                    heappush(self.buy, counter)
-            if order is not None:
-                heappush(self.sell, order)
+            return None
+
+    def cancel_order(self, id):
+        self.active_ids.remove(id)
 
     def to_dict(self):
-        return {"buy": [order.to_dict() for order in self.buy], "sell": [order.to_dict() for order in self.sell]}
+        return {
+            "buy": [order.to_dict() for order in self.buy if order.id in self.active_ids],
+            "sell": [order.to_dict() for order in self.sell if order.id in self.active_ids],
+        }
 
 
-class OrderBooks:
+class Exchange:
     def __init__(self):
-        self.books = {symbol: OrderBook() for symbol in symbols}
+        self.symbols = ["A", "B", "C"]
+        self.trade_history = { symbol : [] for symbol in self.symbols }
+        self.books = {symbol: OrderBook() for symbol in self.symbols}
+        self.accounts = {}
 
-    def put_order(self, order):
-        assert order.symbol in self.books, "symbol must be in books"
-        self.books[order.symbol].put_order(order)
+    def put_order(self, symbol, sign, price, volume, account):
+        assert account in self.accounts, "account must be registered"
+        assert symbol in self.books, "symbol must be in books"
+        order = Order(
+            symbol=symbol,
+            sign=sign,
+            price=price,
+            volume=volume,
+            account=self.accounts[account],
+        )
+        return {"id": self.books[order.symbol].put_order(order, self.trade_history)}
+    
+    def cancel_order(self, id):
+        book = next((book for book in self.books.values() if id in book.active_ids), None)
+        if book is not None:
+            book.cancel_order(id)
+            return {}
+        else:
+            raise Exception("Tried removing non-existing order")
+    
+    def register(self, account):
+        self.accounts[account] = Account(self.symbols)
+        return {}
 
-    def to_dict(self):
+    def books_summary(self):
         return {symbol: book.to_dict() for symbol, book in self.books.items()}
+    
+    def account_summary(self, account):
+        assert account in self.accounts, "account must be registered"
+        return self.accounts[account].to_dict()
