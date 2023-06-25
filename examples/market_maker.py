@@ -12,10 +12,10 @@ name = parser.parse_args().name
 def request(command, args, log=True):
     args["command"] = command
     args["account"] = name
-    response = requests.post("http://etrade.pythonanywhere.com/", json=request).json()
+    response = requests.post("http://etrade.pythonanywhere.com/", json=args).json()
     if log:
         print(time())
-        print(json.dumps(request, indent=2))
+        print(json.dumps(args, indent=2))
         print(json.dumps(response, indent=2))
     return response
 
