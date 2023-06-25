@@ -1,6 +1,6 @@
 import argparse
 import json
-from time import time
+from time import time, sleep
 
 import requests
 
@@ -27,9 +27,9 @@ if "error" not in request("account", {}):
 else:
     request("register", {})
 
-book = request("book", {})
-request("account", {})
-
-for symbol in book:
-    request("buy", {"symbol": symbol, "price": 0.1, "volume": 1e3})
-    request("sell", {"symbol": symbol, "price": 10.0, "volume": 1e3})
+while True:
+    sleep(0.1)
+    book = request("book", {})
+    for symbol in book:
+        request("buy", {"symbol": symbol, "price": 1e9, "volume": 0.1})
+        request("sell", {"symbol": symbol, "price": 1e-9, "volume": 0.1})
